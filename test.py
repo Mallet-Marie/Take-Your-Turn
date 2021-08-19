@@ -34,6 +34,7 @@ class Game:
             self.enemies.append(self.r_mob)
             self.mobs.add(self.r_mob)
             self.all_sprites.add(self.r_mob)
+        self.pickups = pg.sprite.Group()
         self.attack = pg.sprite.Group()
         self.run()
 
@@ -63,12 +64,27 @@ class Game:
         attack_hit = pg.sprite.groupcollide(self.mobs, self.attack, True, False)
         for hit in attack_hit:
             hit.kill()
+            if random.random() >= 0:
+                if hit.type != 'ranged':
+                    self.pickup = Pickup(self, hit.rect.center)
+                    self.all_sprites.add(self.pickup)
+                    self.pickups.add(self.pickup)
         
         for i in range(len(self.enemies)-1):
             if self.enemies[i+1].rect.centerx <= self.enemies[i].rect.centerx <= self.enemies[i+1].rect.centerx + 50:
                 self.enemies[i].speed = 0
             else:
                 self.enemies[i].speed = 1  
+        
+        pickups = pg.sprite.spritecollide(self.player, self.pickups, True)
+        for pickup in pickups:
+            if pickup.type == 'health':
+                if self.player.health < 5:
+                    self.player.health += 1
+            if pickup.type == 'mana':
+                self.player.mana += 10
+                if self.player.mana >= 100:
+                    self.player.mana = 100
 
     def event(self):
         #Game loop events
@@ -87,8 +103,10 @@ class Game:
     def draw(self):
         #Game loop draw
         self.screen.fill(BLACK)
-        self.screen.blit(self.background, (0, 0))
-        self.x -= 1
+        self.rel_x = self.x % self.background_rect.width
+        self.screen.blit(self.background, self.background_rect)
+        if self.rel_x < WIDTH:
+            self.screen.blit(self.background, (self.rel_x, 0))
         self.all_sprites.draw(self.screen)
         self.draw_health(self.screen, 5, 5, self.player.health)
         self.draw_mana(self.screen, 5, 30, self.player.mana)
@@ -103,9 +121,14 @@ class Game:
         pass
 
     def load(self):
-        self.player_img = pg.image.load(path.join(img_dir, 'player2.png')).convert()
-        self.player_img = pg.transform.scale(self.player_img, (64, 64))
-        self.background = pg.image.load(path.join(img_dir, 'tile.png')).convert()
+        self.player_imgs = []
+        self.player_imgs_list = ['player2.png', 'player3.png', 'player4.png', 'player5.png']
+        for img in self.player_imgs_list:
+            img = pg.image.load(path.join(img_dir, img)).convert()
+            img = pg.transform.scale(img,(64,64))
+            img.set_colorkey(BLACK)
+            self.player_imgs.append(img)
+        self.background = pg.image.load(path.join(img_dir, 'tile2.png')).convert()
         self.background = pg.transform.scale(self.background, (WIDTH, HEIGHT))
         self.background_rect = self.background.get_rect()
         self.x = 0

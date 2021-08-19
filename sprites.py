@@ -10,8 +10,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.og_image = self.game.player_img
-        self.og_image.set_colorkey(BLACK)
+        self.og_image = self.game.player_imgs[0]
         self.image = self.og_image.copy()
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, HEIGHT/2)
@@ -65,6 +64,7 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = SPEED
                     self.rot = 270
+                    self.image = self.game.player_imgs[1]
                     #self.rotate()
             if keys[pg.K_LEFT]:
                 if keys[pg.K_UP]:
@@ -78,14 +78,17 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = -SPEED
                     self.rot = 90
+                    self.image = self.game.player_imgs[2]
                     #self.rotate()
             if keys[pg.K_UP] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = -SPEED
                 self.rot = 0
+                self.image = self.game.player_imgs[3]
                 #self.rotate()
             if keys[pg.K_DOWN] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = SPEED
                 self.rot = 180
+                self.image = self.game.player_imgs[0]
                 #self.rotate()
 
     def update(self):
@@ -163,6 +166,7 @@ class Mob(pg.sprite.Sprite):
         self.moving_left = False
         self.moving_right = False
         self.can_move = True
+        self.type = 'melee'
 
     def update(self):
     #    if self.rect.right <= WIDTH and not self.moving_left:
@@ -203,6 +207,7 @@ class Spell(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = old_center
         self.player = player
+        self.type = 'ranged'
         if angle == 0:
             self.vx = 0
             self.vy = -speed
@@ -266,6 +271,7 @@ class Ranged_Mob(pg.sprite.Sprite):
         self.moving_left = False
         self.moving_right = False
         self.last_update = pg.time.get_ticks()
+        self.type = 'melee'
 
     def update(self):
         if self.rect.right <= WIDTH and not self.moving_left:
@@ -288,4 +294,24 @@ class Ranged_Mob(pg.sprite.Sprite):
             thorn = Spell(self.game, i*45, self, WHITE, SPEED/1.5, 10, 10)
             self.game.mobs.add(thorn)
             self.game.all_sprites.add(thorn)
+
+class Pickup(pg.sprite.Sprite):
+    def __init__(self, game, center):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.type = str(random.choices(['health', 'mana'], weights=(50, 50), k=1))
+        self.type = self.type.replace('[', '')
+        self.type = self.type.replace(']', '')
+        self.type = self.type.replace("'", '')
+        if self.type == 'health':
+            self.image = pg.Surface((25, 25))
+            self.image.fill(WHITE)
+        elif self.type == 'mana':
+            self.image = pg.Surface((25, 25))
+            self.image.fill(BLUE)
+        
+        #self.image = self.game.pickup_img[self.type]
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.center = center
      
