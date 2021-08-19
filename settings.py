@@ -1,7 +1,7 @@
 #options/settings
 
-WIDTH = 640
-HEIGHT = 460
+WIDTH = 1280
+HEIGHT = 720
 FPS = 60
 TITLE = "rpg test"
 

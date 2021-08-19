@@ -1,7 +1,10 @@
 import pygame as pg
+from os import path
 from pygame.constants import *
 from settings import *
 from sprites import *
+
+img_dir = path.join(path.dirname(__file__), 'img')
 
 class Game:
     def __init__(self):
@@ -15,14 +18,22 @@ class Game:
 
     def new(self):
         #start new game
+        self.load()
         self.all_sprites = pg.sprite.Group()
         self.player = Player(self)
         self.all_sprites.add(self.player)
         self.mobs = pg.sprite.Group()
-        for i in range(3):
+        self.enemies = []
+        for i in range(2):
             self.mob = Mob(self)
+            self.enemies.append(self.mob)
             self.mobs.add(self.mob)
             self.all_sprites.add(self.mob)
+        for i in range(2):
+            self.r_mob = Ranged_Mob(self)
+            self.enemies.append(self.r_mob)
+            self.mobs.add(self.r_mob)
+            self.all_sprites.add(self.r_mob)
         self.attack = pg.sprite.Group()
         self.run()
 
@@ -32,7 +43,7 @@ class Game:
         while self.playing:
             self.clock.tick(FPS)
             self.event()
-            self.update()
+            self.update()      
             self.draw()
 
     def update(self):
@@ -42,6 +53,8 @@ class Game:
         if hit and not self.player.immortal:
             self.player.hit()
             self.player.health -= 1
+            self.player.rect.x += 20
+            self.player.rect.y += 20
             if self.player.health <= 0:
                 self.player.kill()
                 self.running = False
@@ -50,6 +63,12 @@ class Game:
         attack_hit = pg.sprite.groupcollide(self.mobs, self.attack, True, False)
         for hit in attack_hit:
             hit.kill()
+        
+        for i in range(len(self.enemies)-1):
+            if self.enemies[i+1].rect.centerx <= self.enemies[i].rect.centerx <= self.enemies[i+1].rect.centerx + 50:
+                self.enemies[i].speed = 0
+            else:
+                self.enemies[i].speed = 1  
 
     def event(self):
         #Game loop events
@@ -68,6 +87,8 @@ class Game:
     def draw(self):
         #Game loop draw
         self.screen.fill(BLACK)
+        self.screen.blit(self.background, (0, 0))
+        self.x -= 1
         self.all_sprites.draw(self.screen)
         self.draw_health(self.screen, 5, 5, self.player.health)
         self.draw_mana(self.screen, 5, 30, self.player.mana)
@@ -80,6 +101,14 @@ class Game:
 
     def show_go_screen(self):
         pass
+
+    def load(self):
+        self.player_img = pg.image.load(path.join(img_dir, 'player2.png')).convert()
+        self.player_img = pg.transform.scale(self.player_img, (64, 64))
+        self.background = pg.image.load(path.join(img_dir, 'tile.png')).convert()
+        self.background = pg.transform.scale(self.background, (WIDTH, HEIGHT))
+        self.background_rect = self.background.get_rect()
+        self.x = 0
     
     def draw_health(self, surf, x, y, health):
         for i in range(health):

@@ -10,8 +10,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.og_image = pg.Surface((50, 50))
-        self.og_image.fill(GREEN)
+        self.og_image = self.game.player_img
         self.og_image.set_colorkey(BLACK)
         self.image = self.og_image.copy()
         self.rect = self.image.get_rect()
@@ -45,7 +44,7 @@ class Player(pg.sprite.Sprite):
             self.allow_move = False
         
     def shoot(self):
-        spell = Spell(self.game, self.rot, self)
+        spell = Spell(self.game, self.rot, self, BLUE, SPEED, 25, 25)
         self.game.all_sprites.add(spell)
         self.game.attack.add(spell)
         self.mana -= 25
@@ -66,7 +65,7 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = SPEED
                     self.rot = 270
-                    self.rotate()
+                    #self.rotate()
             if keys[pg.K_LEFT]:
                 if keys[pg.K_UP]:
                     self.rot = 45
@@ -79,15 +78,15 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = -SPEED
                     self.rot = 90
-                    self.rotate()
+                    #self.rotate()
             if keys[pg.K_UP] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = -SPEED
                 self.rot = 0
-                self.rotate()
+                #self.rotate()
             if keys[pg.K_DOWN] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = SPEED
                 self.rot = 180
-                self.rotate()
+                #self.rotate()
 
     def update(self):
         self.vx = 0
@@ -160,21 +159,31 @@ class Mob(pg.sprite.Sprite):
         self.image = self.og_image.copy()
         self.rect = self.image.get_rect()
         self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
-        self.speed = 2
+        self.speed = 1
         self.moving_left = False
         self.moving_right = False
+        self.can_move = True
 
     def update(self):
-        if self.rect.right <= WIDTH and not self.moving_left:
-            self.rect.x += self.speed
-            self.moving_right = True
-        if self.rect.right > WIDTH:
-            self.moving_right = False
-        if self.rect.left >= 0 and not self.moving_right:
-            self.rect.x -= self.speed
-            self.moving_left = True
-        if self.rect.left < 0:
-            self.moving_left = False
+    #    if self.rect.right <= WIDTH and not self.moving_left:
+    #        self.rect.x += self.speed
+    #        self.moving_right = True
+    #    if self.rect.right > WIDTH:
+      #      self.moving_right = False
+    #    if self.rect.left >= 0 and not self.moving_right:
+    #        self.rect.x -= self.speed
+    #        self.moving_left = True
+     #   if self.rect.left < 0:
+     #       self.moving_left = False#
+        if self.can_move:
+            if self.rect.centerx > self.game.player.rect.centerx:
+                self.rect.x -= self.speed
+            elif self.rect.centerx < self.game.player.rect.centerx:
+                self.rect.x += self.speed
+            if self.rect.centery > self.game.player.rect.centery:
+                self.rect.y -= self.speed
+            elif self.rect.centery < self.game.player.rect.centery:
+                self.rect.y += self.speed
             
     def attack(self):
         pass
@@ -183,10 +192,10 @@ class Mob(pg.sprite.Sprite):
         pass
     
 class Spell(pg.sprite.Sprite):
-    def __init__(self, game, angle, player):
+    def __init__(self, game, angle, player, colour, speed, x, y):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.Surface((25, 25))
-        self.image.fill(BLUE)
+        self.image = pg.Surface((x, y))
+        self.image.fill(colour)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
@@ -196,45 +205,44 @@ class Spell(pg.sprite.Sprite):
         self.player = player
         if angle == 0:
             self.vx = 0
-            self.vy = -SPEED
+            self.vy = -speed
             self.rect.centerx = self.player.rect.centerx
             self.rect.bottom = self.player.rect.centery
         elif angle == 270:
-            self.vx = SPEED
+            self.vx = speed
             self.vy = 0
             self.rect.centerx = self.player.rect.right
             self.rect.centery = self.player.rect.centery
         elif angle == 180:
             self.vx = 0
-            self.vy = SPEED
+            self.vy = speed
             self.rect.centerx = self.player.rect.centerx
             self.rect.top = self.player.rect.centery
         elif angle == 90:
-            self.vx = -SPEED
+            self.vx = -speed
             self.vy = 0
             self.rect.centerx = self.player.rect.left
             self.rect.centery = self.player.rect.centery       
         elif angle == 45:
-            self.vx = -SPEED * math.cos(math.radians(angle))
-            self.vy = -SPEED * math.sin(math.radians(angle))
+            self.vx = -speed * math.cos(math.radians(angle))
+            self.vy = -speed * math.sin(math.radians(angle))
             self.rect.centerx = self.player.rect.left
             self.rect.bottom = self.player.rect.centery
         elif angle == 135:
-            self.vx = SPEED * math.cos(math.radians(angle))
-            self.vy = SPEED * math.sin(math.radians(angle))
+            self.vx = speed * math.cos(math.radians(angle))
+            self.vy = speed * math.sin(math.radians(angle))
             self.rect.centerx = self.player.rect.left
             self.rect.top = self.player.rect.centery
         elif angle == 225:
-            self.vx = -SPEED * math.cos(math.radians(angle))
-            self.vy = -SPEED * math.sin(math.radians(angle))
+            self.vx = -speed * math.cos(math.radians(angle))
+            self.vy = -speed * math.sin(math.radians(angle))
             self.rect.centerx = self.player.rect.right
             self.rect.top = self.player.rect.centery
         elif angle == 315:
-            self.vx = SPEED * math.cos(math.radians(angle))
-            self.vy = SPEED * math.sin(math.radians(angle))
+            self.vx = speed * math.cos(math.radians(angle))
+            self.vy = speed * math.sin(math.radians(angle))
             self.rect.centerx = self.player.rect.right
             self.rect.bottom = self.player.rect.centery     
-        self.last_update = pg.time.get_ticks()
         self.vx *= 1.5
         self.vy *= 1.5
 
@@ -242,4 +250,42 @@ class Spell(pg.sprite.Sprite):
         self.rect.x += self.vx
         self.rect.y += self.vy
         if self.rect.bottom < -30 or self.rect.left < -30 or self.rect.right > WIDTH+30 or self.rect.top > HEIGHT+30:
-            self.kill()         
+            self.kill()    
+
+class Ranged_Mob(pg.sprite.Sprite):
+    def __init__(self, game):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.og_image = pg.Surface((30, 30))
+        self.og_image.fill(GREEN)
+        self.og_image.set_colorkey(BLACK)
+        self.image = self.og_image.copy()
+        self.rect = self.image.get_rect()
+        self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
+        self.speed = 1
+        self.moving_left = False
+        self.moving_right = False
+        self.last_update = pg.time.get_ticks()
+
+    def update(self):
+        if self.rect.right <= WIDTH and not self.moving_left:
+            self.rect.x += self.speed
+            self.moving_right = True
+        if self.rect.right > WIDTH:
+           self.moving_right = False
+        if self.rect.left >= 0 and not self.moving_right:
+            self.rect.x -= self.speed
+            self.moving_left = True
+        if self.rect.left < 0:
+            self.moving_left = False
+        now = pg.time.get_ticks()           
+        if now - self.last_update >= 3000:
+            self.last_update = now
+            self.attack()
+
+    def attack(self):
+        for i in range(8):
+            thorn = Spell(self.game, i*45, self, WHITE, SPEED/1.5, 10, 10)
+            self.game.mobs.add(thorn)
+            self.game.all_sprites.add(thorn)
+     
