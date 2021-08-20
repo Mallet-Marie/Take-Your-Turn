@@ -1,9 +1,10 @@
-#sprite classes
+# sprite classes
 
 from settings import *
 import pygame as pg
 import math
 import random
+
 
 class Player(pg.sprite.Sprite):
 
@@ -26,8 +27,8 @@ class Player(pg.sprite.Sprite):
         self.mana = 100
         self.immortal = False
         print("arrow keys-move, space-sword, c-spell")
-        #self.vel = 0
-    
+        # self.vel = 0
+
     def rotate(self):
         n_image = pg.transform.rotate(self.og_image, self.rot)
         og_center = self.rect.center
@@ -39,11 +40,11 @@ class Player(pg.sprite.Sprite):
         now = pg.time.get_ticks()
         if now - self.last_attack > self.delay:
             self.last_attack = now
-            sword  = Sword(self.game, self.rot, self)
+            sword = Sword(self.game, self.rot, self)
             self.game.all_sprites.add(sword)
             self.game.attack.add(sword)
             self.allow_move = False
-        
+
     def shoot(self):
         spell = Spell(self.game, self.rot, self)
         self.game.all_sprites.add(spell)
@@ -56,7 +57,7 @@ class Player(pg.sprite.Sprite):
             if keys[pg.K_RIGHT]:
                 if keys[pg.K_UP]:
                     self.rot = 315
-                    #calculates speed based on components so diagonal speed is same as vertical and horizontal
+                    # calculates speed based on components so diagonal speed is same as vertical and horizontal
                     self.vx = SPEED * math.cos(math.radians(self.rot))
                     self.vy = SPEED * math.sin(math.radians(self.rot))
                 elif keys[pg.K_DOWN]:
@@ -93,16 +94,17 @@ class Player(pg.sprite.Sprite):
         self.vx = 0
         self.vy = 0
         self.move()
-        #self.vel = ((self.vx*math.sin(math.radians(self.rot)))+(self.vy*math.cos(math.radians(self.rot))))
-        #print(self.vel)
+        # self.vel = ((self.vx*math.sin(math.radians(self.rot)))+(self.vy*math.cos(math.radians(self.rot))))
+        # print(self.vel)
         if self.immortal and pg.time.get_ticks() - self.immortal_timer > 1000:
             self.immortal = False
         self.rect.centerx += self.vx
         self.rect.centery += self.vy
-    
+
     def hit(self):
         self.immortal = True
         self.immortal_timer = pg.time.get_ticks()
+
 
 class Sword(pg.sprite.Sprite):
     def __init__(self, game, angle, player):
@@ -112,7 +114,7 @@ class Sword(pg.sprite.Sprite):
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
-        old_center = self.rect.center 
+        old_center = self.rect.center
         self.rect = self.image.get_rect()
         self.rect.center = old_center
         self.player = player
@@ -128,7 +130,7 @@ class Sword(pg.sprite.Sprite):
             self.rect.top = self.player.rect.centery
         elif angle == 90:
             self.rect.centerx = self.player.rect.left
-            self.rect.bottom = self.player.rect.centery       
+            self.rect.bottom = self.player.rect.centery
         elif angle == 45:
             self.rect.centerx = self.player.rect.left
             self.rect.bottom = self.player.rect.centery
@@ -140,15 +142,16 @@ class Sword(pg.sprite.Sprite):
             self.rect.top = self.player.rect.centery
         elif angle == 315:
             self.rect.centerx = self.player.rect.right
-            self.rect.bottom = self.player.rect.centery     
+            self.rect.bottom = self.player.rect.centery
         self.last_update = pg.time.get_ticks()
-        
+
     def update(self):
         now = pg.time.get_ticks()
         if now - self.last_update > FPS*2.5:
             self.last_update = now
             self.player.allow_move = True
             self.kill()
+
 
 class Mob(pg.sprite.Sprite):
     def __init__(self, game):
@@ -159,29 +162,46 @@ class Mob(pg.sprite.Sprite):
         self.og_image.set_colorkey(BLACK)
         self.image = self.og_image.copy()
         self.rect = self.image.get_rect()
-        self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
+        self.rect.center = (random.randrange(50, WIDTH-50),
+                            random.randrange(50, HEIGHT-50))
         self.speed = 2
         self.moving_left = False
         self.moving_right = False
 
     def update(self):
-        if self.rect.right <= WIDTH and not self.moving_left:
+        for i, m in enumerate(self.game.mobs):
+            if m == self:
+                continue
+            if m.rect.colliderect(self.rect):
+                if self.rect.y < m.rect.y:
+                    self.rect.y -= self.speed
+                if self.rect.y > m.rect.y:
+                    self.rect.y += self.speed
+                if self.rect.y == m.rect.y:
+                    self.rect.y += random.randint(-1, 1)
+
+        NEW_WIDTH = WIDTH - 100
+        if self.rect.right <= NEW_WIDTH and not self.moving_left:
             self.rect.x += self.speed
             self.moving_right = True
-        if self.rect.right > WIDTH:
+        if self.rect.right > NEW_WIDTH:
             self.moving_right = False
-        if self.rect.left >= 0 and not self.moving_right:
+        if self.rect.left >= 100 and not self.moving_right:
             self.rect.x -= self.speed
             self.moving_left = True
-        if self.rect.left < 0:
+        if self.rect.left < 100:
             self.moving_left = False
-            
+
+    def hit(self):
+        pass
+
     def attack(self):
         pass
 
     def rotate(self):
         pass
-    
+
+
 class Spell(pg.sprite.Sprite):
     def __init__(self, game, angle, player):
         pg.sprite.Sprite.__init__(self)
@@ -190,7 +210,7 @@ class Spell(pg.sprite.Sprite):
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
-        old_center = self.rect.center 
+        old_center = self.rect.center
         self.rect = self.image.get_rect()
         self.rect.center = old_center
         self.player = player
@@ -213,7 +233,7 @@ class Spell(pg.sprite.Sprite):
             self.vx = -SPEED
             self.vy = 0
             self.rect.centerx = self.player.rect.left
-            self.rect.centery = self.player.rect.centery       
+            self.rect.centery = self.player.rect.centery
         elif angle == 45:
             self.vx = -SPEED * math.cos(math.radians(angle))
             self.vy = -SPEED * math.sin(math.radians(angle))
@@ -233,7 +253,7 @@ class Spell(pg.sprite.Sprite):
             self.vx = SPEED * math.cos(math.radians(angle))
             self.vy = SPEED * math.sin(math.radians(angle))
             self.rect.centerx = self.player.rect.right
-            self.rect.bottom = self.player.rect.centery     
+            self.rect.bottom = self.player.rect.centery
         self.last_update = pg.time.get_ticks()
         self.vx *= 1.5
         self.vy *= 1.5
@@ -242,4 +262,4 @@ class Spell(pg.sprite.Sprite):
         self.rect.x += self.vx
         self.rect.y += self.vy
         if self.rect.bottom < -30 or self.rect.left < -30 or self.rect.right > WIDTH+30 or self.rect.top > HEIGHT+30:
-            self.kill()         
+            self.kill()
