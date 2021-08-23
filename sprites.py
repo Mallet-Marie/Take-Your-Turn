@@ -23,6 +23,10 @@ class Player(pg.sprite.Sprite):
         self.health = 3
         self.mana = 100
         self.immortal = False
+        self.last_shoot = pg.time.get_ticks()
+        self.shoot_delay = 2000
+        self.last_check = pg.time.get_ticks()
+        self.check_delay = 350
         print("arrow keys-move, space-sword, c-spell")
         #self.vel = 0
     
@@ -43,10 +47,13 @@ class Player(pg.sprite.Sprite):
             self.allow_move = False
         
     def shoot(self):
-        spell = Spell(self.game, self.rot, self, BLUE, SPEED, 25, 25)
-        self.game.all_sprites.add(spell)
-        self.game.attack.add(spell)
-        self.mana -= 25
+        now = pg.time.get_ticks()
+        if now - self.last_shoot > self.shoot_delay:
+            self.last_shoot = now
+            spell = Spell(self.game, self.rot, self, BLUE, SPEED, 25, 25, 'player')
+            self.game.all_sprites.add(spell)
+            self.game.attack.add(spell)
+            self.mana -= 25
 
     def move(self):
         keys = pg.key.get_pressed()
@@ -91,12 +98,114 @@ class Player(pg.sprite.Sprite):
                 self.image = self.game.player_imgs[0]
                 #self.rotate()
 
+    def check_area(self):
+        if self.game.area != 5:
+            if self.game.area == 1:
+                if self.rect.right >= WIDTH-10:
+                    self.rect.right = WIDTH - 10
+                elif self.rect.left <= 10:
+                    self.game.area = 3
+                    self.rect.left += WIDTH
+                    self.game.kill_all() #remove all enemy sprites when moving to new area
+                    self.game.check_area()
+                    for i in range(2): #spawns new enemies
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+                elif self.rect.top <= 10:
+                    self.game.area = 2
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+                    self.rect.top += HEIGHT
+                elif self.rect.bottom >= HEIGHT-10:
+                    self.rect.bottom = HEIGHT-10
+                    
+            elif self.game.area == 2:
+                if self.rect.right >= WIDTH-10:
+                    self.rect.right = WIDTH - 10
+                elif self.rect.left <= 10:
+                    self.game.area = 4
+                    self.rect.left += WIDTH
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()                
+                elif self.rect.top <= 10:
+                    self.rect.top = 10
+                elif self.rect.bottom >= HEIGHT-10:
+                    self.game.area = 1
+                    self.rect.bottom -= HEIGHT - 10
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+
+            elif self.game.area == 3:
+                if self.rect.right >= WIDTH-10:
+                    self.game.area = 1
+                    self.rect.right -= WIDTH
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+                elif self.rect.left <= 10:
+                    self.rect.left = 10
+                elif self.rect.top <= 10:
+                    self.game.area = 4
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+                    self.rect.top += HEIGHT
+                elif self.rect.bottom >= HEIGHT-10:
+                    self.rect.bottom = HEIGHT-10
+
+            elif self.game.area == 4:
+                if self.rect.right >= WIDTH-10:
+                    self.game.area = 2
+                    self.rect.right -= WIDTH
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+                elif self.rect.left <= 10:
+                    self.rect.left = 10
+                elif self.rect.top <= 10:
+                    self.rect.top = 10
+                elif self.rect.bottom >= HEIGHT-10:
+                    self.game.area = 3
+                    self.rect.bottom -= HEIGHT - 10
+                    self.game.kill_all()
+                    self.game.check_area()
+                    for i in range(2):
+                        self.game.spawn()
+                    for i in range(2):
+                        self.game.spawn_ranged()
+
     def update(self):
         self.vx = 0
         self.vy = 0
         self.move()
         #self.vel = ((self.vx*math.sin(math.radians(self.rot)))+(self.vy*math.cos(math.radians(self.rot))))
         #print(self.vel)
+        now = pg.time.get_ticks()
+        if now - self.last_check > self.check_delay:
+            self.last_check = now
+            self.check_area()
         if self.immortal and pg.time.get_ticks() - self.immortal_timer > 1000:
             self.immortal = False
         self.rect.centerx += self.vx
@@ -156,10 +265,8 @@ class Mob(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.og_image = pg.Surface((50, 50))
-        self.og_image.fill(RED)
-        self.og_image.set_colorkey(BLACK)
-        self.image = self.og_image.copy()
+        self.image = self.game.mummy_imgs[0]
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
         self.speed = 1
@@ -169,26 +276,29 @@ class Mob(pg.sprite.Sprite):
         self.type = 'melee'
 
     def update(self):
-    #    if self.rect.right <= WIDTH and not self.moving_left:
-    #        self.rect.x += self.speed
-    #        self.moving_right = True
-    #    if self.rect.right > WIDTH:
-      #      self.moving_right = False
-    #    if self.rect.left >= 0 and not self.moving_right:
-    #        self.rect.x -= self.speed
-    #        self.moving_left = True
-     #   if self.rect.left < 0:
-     #       self.moving_left = False#
+        for i, m in enumerate(self.game.mobs):
+            if m == self:
+                continue
+            if m.rect.colliderect(self.rect):
+                if self.rect.y < m.rect.y:
+                    self.rect.y -= self.speed
+                if self.rect.y > m.rect.y:
+                    self.rect.y += self.speed
+                if self.rect.y == m.rect.y:
+                    self.rect.y += random.randint(-1, 1)
+        NEW_WIDTH = WIDTH - 100
         if self.can_move:
             if self.rect.centerx > self.game.player.rect.centerx:
                 self.rect.x -= self.speed
+                self.image = self.game.mummy_imgs[1]
             elif self.rect.centerx < self.game.player.rect.centerx:
                 self.rect.x += self.speed
+                self.image = self.game.mummy_imgs[0]
             if self.rect.centery > self.game.player.rect.centery:
                 self.rect.y -= self.speed
             elif self.rect.centery < self.game.player.rect.centery:
                 self.rect.y += self.speed
-            
+
     def attack(self):
         pass
 
@@ -196,10 +306,14 @@ class Mob(pg.sprite.Sprite):
         pass
     
 class Spell(pg.sprite.Sprite):
-    def __init__(self, game, angle, player, colour, speed, x, y):
+    def __init__(self, game, angle, player, colour, speed, x, y, spawn):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.Surface((x, y))
-        self.image.fill(colour)
+        if spawn == 'mob':
+            self.image = game.poison_img
+            self.image = pg.transform.scale(self.image, (x, y))
+        elif spawn == 'player':
+            self.image = pg.Surface((x, y))
+            self.image.fill(colour)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
@@ -207,6 +321,7 @@ class Spell(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = old_center
         self.player = player
+
         self.type = 'ranged'
         if angle == 0:
             self.vx = 0
@@ -261,10 +376,8 @@ class Ranged_Mob(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.og_image = pg.Surface((30, 30))
-        self.og_image.fill(GREEN)
-        self.og_image.set_colorkey(BLACK)
-        self.image = self.og_image.copy()
+        self.image = self.game.snake_imgs[0]
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
         self.speed = 1
@@ -274,15 +387,28 @@ class Ranged_Mob(pg.sprite.Sprite):
         self.type = 'melee'
 
     def update(self):
-        if self.rect.right <= WIDTH and not self.moving_left:
+        for i, m in enumerate(self.game.mobs):
+            if m == self:
+                continue
+            if m.rect.colliderect(self.rect):
+                if self.rect.y < m.rect.y:
+                    self.rect.y -= self.speed
+                if self.rect.y > m.rect.y:
+                    self.rect.y += self.speed
+                if self.rect.y == m.rect.y:
+                    self.rect.y += random.randint(-1, 1)
+        NEW_WIDTH = WIDTH - 100
+        if self.rect.right <= NEW_WIDTH and not self.moving_left:
+            self.image = self.game.snake_imgs[2]
             self.rect.x += self.speed
             self.moving_right = True
-        if self.rect.right > WIDTH:
-           self.moving_right = False
-        if self.rect.left >= 0 and not self.moving_right:
+        if self.rect.right > NEW_WIDTH:
+            self.moving_right = False
+        if self.rect.left >= 100 and not self.moving_right:
             self.rect.x -= self.speed
+            self.image = self.game.snake_imgs[0]
             self.moving_left = True
-        if self.rect.left < 0:
+        if self.rect.left < 100:
             self.moving_left = False
         now = pg.time.get_ticks()           
         if now - self.last_update >= 3000:
@@ -291,8 +417,8 @@ class Ranged_Mob(pg.sprite.Sprite):
 
     def attack(self):
         for i in range(8):
-            thorn = Spell(self.game, i*45, self, WHITE, SPEED/1.5, 10, 10)
-            self.game.mobs.add(thorn)
+            thorn = Spell(self.game, i*45, self, WHITE, SPEED/1.5, 10, 10, 'mob')
+            self.game.projectiles.add(thorn)
             self.game.all_sprites.add(thorn)
 
 class Pickup(pg.sprite.Sprite):
