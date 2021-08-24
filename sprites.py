@@ -498,6 +498,8 @@ class Dash_Mob(pg.sprite.Sprite):
         self.stepy = 0
         self.posx = 0
         self.posy = 0
+        self.rot = 0
+        self.is_moving = False
 
     def update(self):
         now = pg.time.get_ticks()
@@ -507,22 +509,22 @@ class Dash_Mob(pg.sprite.Sprite):
             self.posy = self.game.player.rect.centery
             self.dx = self.game.player.rect.centerx - self.rect.centerx
             self.dy = self.game.player.rect.centery - self.rect.centery
-            self.stepx = self.dx/30
-            self.stepy = self.dy/30   
-        self.rect.center = (self.rect.centerx + self.stepx, self.rect.centery + self.stepy) 
-            #self.pointx = self.game.player.rect.centerx
-            #self.pointy = self.game.player.rect.centery
+            self.rot = math.atan2(self.dy, self.dx)
+            self.is_moving = True
 
-        #self.rot = (self.game.player.pos - self.pos).angle_to(vec(1, 0))
-        #self.image = pg.transform.rotate(self.image, self.rot)
-        #self.rect = self.image.get_rect()
-        #self.rect.center = self.pos
-            
-        #if self.rect.centerx > self.pointx:
-        #    self.rect.x -= self.speed
-        #elif self.rect.centerx < self.pointx:
-        #    self.rect.x += self.speed
-        #if self.rect.centery > self.pointy:
-        #    self.rect.y -= self.speed
-        #elif self.rect.centery < self.pointy:
-        #    self.rect.y += self.speed
+        if self.is_moving:
+            self.rect.centerx += 7*(SPEED*math.cos(self.rot))
+            self.rect.centery += 7*(SPEED*math.sin(self.rot))
+
+        if self.rect.right >= WIDTH-10:
+            self.rect.right = WIDTH - 10
+            self.is_moving = False
+        if self.rect.bottom >= HEIGHT-10:
+            self.rect.bottom = HEIGHT-10
+            self.is_moving = False
+        if self.rect.top <= 10:
+            self.rect.top = 10
+            self.is_moving = False
+        if self.rect.left <= 10:
+            self.rect.left = 10
+            self.is_moving = False
