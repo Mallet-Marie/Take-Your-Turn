@@ -15,6 +15,9 @@ class Game:
         pg.display.set_caption(TITLE)
         self.clock = pg.time.Clock()
         self.running = True
+        self.font = pg.font.Font('Pro EB.otf', 32)
+        self.intro_background = pg.image.load(path.join(img_dir, 'back.png')).convert()
+        self.intro_background = pg.transform.scale(self.intro_background, (WIDTH, HEIGHT))
 
     def new(self):
         #start new game
@@ -30,6 +33,10 @@ class Game:
             self.spawn()
         for i in range(2):
             self.spawn_ranged()
+        self.d_mob = Dash_Mob(self)
+        self.enemies.append(self.d_mob)
+        self.mobs.add(self.d_mob)
+        self.all_sprites.add(self.d_mob)
         self.pickups = pg.sprite.Group()
         self.attack = pg.sprite.Group()
         self.run()
@@ -200,7 +207,33 @@ class Game:
         pg.draw.rect(surf, BLUE, fill_rect)
         pg.draw.rect(surf, WHITE, outline_rect, 2)        
 
+    def intro_screen(self):
+        intro = True
+
+        title = self.font.render('Temple Raiders', True, BLACK)
+        title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
+        play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 100,
+                             WHITE, BLACK, 'Play', 32)
+        while intro:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    intro = False
+                    self.running = False
+
+            mouse_pos = pg.mouse.get_pos()
+            mouse_pressed = pg.mouse.get_pressed()
+
+            if play_button.is_pressed(mouse_pos, mouse_pressed):
+                intro = False
+
+            self.screen.blit(self.intro_background, (0, 0))
+            self.screen.blit(title, title_rect)
+            self.screen.blit(play_button.image, play_button.rect)
+            self.clock.tick(FPS)
+            pg.display.update()
+
 g = Game()
+g.intro_screen()
 #g.show_start_screen()
 while g.running:
     g.new()

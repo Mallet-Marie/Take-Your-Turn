@@ -372,6 +372,38 @@ class Spell(pg.sprite.Sprite):
         if self.rect.bottom < -30 or self.rect.left < -30 or self.rect.right > WIDTH+30 or self.rect.top > HEIGHT+30:
             self.kill()    
 
+class Button:
+    def __init__(self, x, y, height, width, fg, bg, content, fontsize):
+        self.font = pg.font.Font('Pro EB.otf', fontsize)
+        self.content = content
+
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+        self.fg = fg
+        self.bg = bg
+
+        self.image = pg.Surface((self.width, self.height))
+        self.image.fill(self.bg)
+        self.rect = self.image.get_rect()
+
+        self.rect.x = self.x
+        self.rect.y - self.y
+
+        self.text = self.font.render(self.content, True, self.fg)
+        self.text_rect = self.text.get_rect(
+            center=(self.width/2, self.height/2))
+        self.image.blit(self.text, self.text_rect)
+
+    def is_pressed(self, pos, pressed):
+        if self.rect.collidepoint(pos):
+            if pressed[0]:
+                return True
+            return False
+        return False
+
 class Ranged_Mob(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
@@ -441,3 +473,52 @@ class Pickup(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = center
      
+class Dash_Mob(pg.sprite.Sprite):
+    def __init__(self, game):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.image = pg.Surface((50, 50))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.pointx = random.randrange(50, WIDTH-50)
+        self.pointy = random.randrange(50, HEIGHT-50)
+        self.rect.centerx = self.pointx
+        self.rect.centery = self.pointy
+        self.speed = 10
+        self.last_dash = pg.time.get_ticks()
+        self.dash_delay = 5000
+        self.type = 'melee'
+        self.dx = 0
+        self.dy = 0
+        self.stepx = 0
+        self.stepy = 0
+        self.posx = 0
+        self.posy = 0
+
+    def update(self):
+        now = pg.time.get_ticks()
+        if now - self.last_dash > self.dash_delay:
+            self.last_dash = now
+            self.posx = self.game.player.rect.centerx
+            self.posy = self.game.player.rect.centery
+            self.dx = self.game.player.rect.centerx - self.rect.centerx
+            self.dy = self.game.player.rect.centery - self.rect.centery
+            self.stepx = self.dx/30
+            self.stepy = self.dy/30   
+        self.rect.center = (self.rect.centerx + self.stepx, self.rect.centery + self.stepy) 
+            #self.pointx = self.game.player.rect.centerx
+            #self.pointy = self.game.player.rect.centery
+
+        #self.rot = (self.game.player.pos - self.pos).angle_to(vec(1, 0))
+        #self.image = pg.transform.rotate(self.image, self.rot)
+        #self.rect = self.image.get_rect()
+        #self.rect.center = self.pos
+            
+        #if self.rect.centerx > self.pointx:
+        #    self.rect.x -= self.speed
+        #elif self.rect.centerx < self.pointx:
+        #    self.rect.x += self.speed
+        #if self.rect.centery > self.pointy:
+        #    self.rect.y -= self.speed
+        #elif self.rect.centery < self.pointy:
+        #    self.rect.y += self.speed
