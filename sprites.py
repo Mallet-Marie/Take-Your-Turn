@@ -101,9 +101,7 @@ class Player(pg.sprite.Sprite):
     def check_area(self):
         if self.game.area != 5:
             if self.game.area == 1:
-                if self.rect.right >= WIDTH-10:
-                    self.rect.right = WIDTH - 10
-                elif self.rect.left <= 10:
+                if self.rect.left <= 10:
                     self.game.area = 3
                     self.rect.left += WIDTH
                     self.game.kill_all() #remove all enemy sprites when moving to new area
@@ -121,13 +119,9 @@ class Player(pg.sprite.Sprite):
                     for i in range(2):
                         self.game.spawn_ranged()
                     self.rect.top += HEIGHT
-                elif self.rect.bottom >= HEIGHT-10:
-                    self.rect.bottom = HEIGHT-10
                     
             elif self.game.area == 2:
-                if self.rect.right >= WIDTH-10:
-                    self.rect.right = WIDTH - 10
-                elif self.rect.left <= 10:
+                if self.rect.left <= 10:
                     self.game.area = 4
                     self.rect.left += WIDTH
                     self.game.kill_all()
@@ -135,9 +129,7 @@ class Player(pg.sprite.Sprite):
                     for i in range(2):
                         self.game.spawn()
                     for i in range(2):
-                        self.game.spawn_ranged()                
-                elif self.rect.top <= 10:
-                    self.rect.top = 10
+                        self.game.spawn_ranged()        
                 elif self.rect.bottom >= HEIGHT-10:
                     self.game.area = 1
                     self.rect.bottom -= HEIGHT - 10
@@ -158,8 +150,6 @@ class Player(pg.sprite.Sprite):
                         self.game.spawn()
                     for i in range(2):
                         self.game.spawn_ranged()
-                elif self.rect.left <= 10:
-                    self.rect.left = 10
                 elif self.rect.top <= 10:
                     self.game.area = 4
                     self.game.kill_all()
@@ -169,8 +159,6 @@ class Player(pg.sprite.Sprite):
                     for i in range(2):
                         self.game.spawn_ranged()
                     self.rect.top += HEIGHT
-                elif self.rect.bottom >= HEIGHT-10:
-                    self.rect.bottom = HEIGHT-10
 
             elif self.game.area == 4:
                 if self.rect.right >= WIDTH-10:
@@ -182,10 +170,6 @@ class Player(pg.sprite.Sprite):
                         self.game.spawn()
                     for i in range(2):
                         self.game.spawn_ranged()
-                elif self.rect.left <= 10:
-                    self.rect.left = 10
-                elif self.rect.top <= 10:
-                    self.rect.top = 10
                 elif self.rect.bottom >= HEIGHT-10:
                     self.game.area = 3
                     self.rect.bottom -= HEIGHT - 10
@@ -210,7 +194,27 @@ class Player(pg.sprite.Sprite):
             self.immortal = False
         self.rect.centerx += self.vx
         self.rect.centery += self.vy
-    
+        if self.game.area == 1:
+            if self.rect.right >= WIDTH-10:
+                self.rect.right = WIDTH - 10
+            if self.rect.bottom >= HEIGHT-10:
+                self.rect.bottom = HEIGHT-10
+        elif self.game.area == 2:
+            if self.rect.right >= WIDTH-10:
+                self.rect.right = WIDTH - 10
+            if self.rect.top <= 10:
+                self.rect.top = 10
+        elif self.game.area == 3:
+            if self.rect.left <= 10:
+                self.rect.left = 10
+            if self.rect.bottom >= HEIGHT-10:
+                self.rect.bottom = HEIGHT-10
+        elif self.game.area == 4:
+            if self.rect.left <= 10:
+                self.rect.left = 10
+            if self.rect.top <= 10:
+                self.rect.top = 10
+
     def hit(self):
         self.immortal = True
         self.immortal_timer = pg.time.get_ticks()
