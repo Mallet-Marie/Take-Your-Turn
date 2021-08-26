@@ -10,8 +10,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.og_image = self.game.player_imgs[0]
-        self.image = self.og_image.copy()
+        self.image = self.game.d_move_anim[0]
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, HEIGHT/2)
         self.last_attack = pg.time.get_ticks()
@@ -27,19 +26,25 @@ class Player(pg.sprite.Sprite):
         self.shoot_delay = 2000
         self.last_check = pg.time.get_ticks()
         self.check_delay = 350
+        self.frame = 0
+        self.last_update = pg.time.get_ticks()
+        self.framerate = 120
         print("arrow keys-move, space-sword, c-spell")
-        #self.vel = 0
-    
-    def rotate(self):
-        n_image = pg.transform.rotate(self.og_image, self.rot)
-        og_center = self.rect.center
-        self.image = n_image
-        self.rect = self.image.get_rect()
-        self.rect.center = og_center
 
     def attack(self):
         now = pg.time.get_ticks()
         if now - self.last_attack > self.delay:
+            center = self.rect.center
+            if self.rot == 0:
+                self.image = self.game.u_attack_img
+            if self.rot == 90:
+                self.image = self.game.l_attack_img
+            if self.rot == 180:
+                self.image = self.game.d_attack_img
+            if self.rot == 270:
+                self.image = self.game.r_attack_img
+            self.rect = self.image.get_rect()
+            self.rect.center = center
             self.last_attack = now
             sword  = Sword(self.game, self.rot, self)
             self.game.all_sprites.add(sword)
@@ -50,7 +55,7 @@ class Player(pg.sprite.Sprite):
         now = pg.time.get_ticks()
         if now - self.last_shoot > self.shoot_delay:
             self.last_shoot = now
-            spell = Spell(self.game, self.rot, self, BLUE, SPEED, 25, 25, 'player')
+            spell = Spell(self.game, self.rot, self, SPEED, 'player')
             self.game.all_sprites.add(spell)
             self.game.attack.add(spell)
             self.mana -= 25
@@ -71,7 +76,16 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = SPEED
                     self.rot = 270
-                    self.image = self.game.player_imgs[1]
+                    now = pg.time.get_ticks()
+                    if now - self.last_update > self.framerate:
+                        self.last_update = now
+                        self.frame += 1
+                        if self.frame >= 4:
+                            self.frame = 0
+                        center = self.rect.center
+                        self.image = self.game.r_move_anim[self.frame]
+                        self.rect = self.image.get_rect()
+                        self.rect.center = center
                     #self.rotate()
             if keys[pg.K_LEFT]:
                 if keys[pg.K_UP]:
@@ -85,17 +99,46 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = -SPEED
                     self.rot = 90
-                    self.image = self.game.player_imgs[2]
+                    #self.image = self.game.player_imgs[2]
+                    now = pg.time.get_ticks()
+                    if now - self.last_update > self.framerate:
+                        self.last_update = now
+                        self.frame += 1
+                        if self.frame >= 4:
+                            self.frame = 0
+                        center = self.rect.center
+                        self.image = self.game.l_move_anim[self.frame]
+                        self.rect = self.image.get_rect()
+                        self.rect.center = center
+
                     #self.rotate()
             if keys[pg.K_UP] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = -SPEED
                 self.rot = 0
-                self.image = self.game.player_imgs[3]
+                now = pg.time.get_ticks()
+                if now - self.last_update > self.framerate:
+                    self.last_update = now
+                    self.frame += 1
+                    if self.frame >= 4:
+                        self.frame = 0
+                    center = self.rect.center
+                    self.image = self.game.u_move_anim[self.frame]
+                    self.rect = self.image.get_rect()
+                    self.rect.center = center
                 #self.rotate()
             if keys[pg.K_DOWN] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = SPEED
                 self.rot = 180
-                self.image = self.game.player_imgs[0]
+                now = pg.time.get_ticks()
+                if now - self.last_update > self.framerate:
+                    self.last_update = now
+                    self.frame += 1
+                    if self.frame >= 4:
+                        self.frame = 0
+                    center = self.rect.center
+                    self.image = self.game.d_move_anim[self.frame]
+                    self.rect = self.image.get_rect()
+                    self.rect.center = center
                 #self.rotate()
 
     def check_area(self):
@@ -223,6 +266,7 @@ class Sword(pg.sprite.Sprite):
     def __init__(self, game, angle, player):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.Surface((10, 60))
+        self.image.set_alpha(128)
         self.image.fill(WHITE)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
@@ -274,9 +318,6 @@ class Mob(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (random.randrange(50, WIDTH-50), random.randrange(50, HEIGHT-50))
         self.speed = 1
-        self.moving_left = False
-        self.moving_right = False
-        self.can_move = True
         self.type = 'melee'
 
     def update(self):
@@ -290,34 +331,26 @@ class Mob(pg.sprite.Sprite):
                     self.rect.y += self.speed
                 if self.rect.y == m.rect.y:
                     self.rect.y += random.randint(-1, 1)
-        NEW_WIDTH = WIDTH - 100
-        if self.can_move:
-            if self.rect.centerx > self.game.player.rect.centerx:
-                self.rect.x -= self.speed
-                self.image = self.game.mummy_imgs[1]
-            elif self.rect.centerx < self.game.player.rect.centerx:
-                self.rect.x += self.speed
-                self.image = self.game.mummy_imgs[0]
-            if self.rect.centery > self.game.player.rect.centery:
-                self.rect.y -= self.speed
-            elif self.rect.centery < self.game.player.rect.centery:
-                self.rect.y += self.speed
-
-    def attack(self):
-        pass
-
-    def rotate(self):
-        pass
+        
+        if self.rect.centerx > self.game.player.rect.centerx:
+            self.rect.x -= self.speed
+            self.image = self.game.mummy_imgs[1]
+        elif self.rect.centerx < self.game.player.rect.centerx:
+            self.rect.x += self.speed
+            self.image = self.game.mummy_imgs[0]
+        if self.rect.centery > self.game.player.rect.centery:
+            self.rect.y -= self.speed
+        elif self.rect.centery < self.game.player.rect.centery:
+            self.rect.y += self.speed
     
 class Spell(pg.sprite.Sprite):
-    def __init__(self, game, angle, player, colour, speed, x, y, spawn):
+    def __init__(self, game, angle, player, speed, spawn):
         pg.sprite.Sprite.__init__(self)
         if spawn == 'mob':
             self.image = game.poison_img
-            self.image = pg.transform.scale(self.image, (x, y))
+            self.image = pg.transform.scale2x(self.image)
         elif spawn == 'player':
-            self.image = pg.Surface((x, y))
-            self.image.fill(colour)
+            self.image = game.spell_image
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
@@ -453,7 +486,7 @@ class Ranged_Mob(pg.sprite.Sprite):
 
     def attack(self):
         for i in range(8):
-            thorn = Spell(self.game, i*45, self, WHITE, SPEED/1.5, 10, 10, 'mob')
+            thorn = Spell(self.game, i*45, self, SPEED/1.5, 'mob')
             self.game.projectiles.add(thorn)
             self.game.all_sprites.add(thorn)
 
@@ -466,11 +499,11 @@ class Pickup(pg.sprite.Sprite):
         self.type = self.type.replace(']', '')
         self.type = self.type.replace("'", '')
         if self.type == 'health':
-            self.image = pg.Surface((25, 25))
-            self.image.fill(WHITE)
+            self.image = self.game.heart_img
+            self.image = pg.transform.scale2x(self.image)
         elif self.type == 'mana':
-            self.image = pg.Surface((25, 25))
-            self.image.fill(BLUE)
+            self.image = self.game.mana_img
+            self.image = pg.transform.scale2x(self.image)
         
         #self.image = self.game.pickup_img[self.type]
         self.image.set_colorkey(BLACK)
@@ -494,10 +527,6 @@ class Dash_Mob(pg.sprite.Sprite):
         self.type = 'melee'
         self.dx = 0
         self.dy = 0
-        self.stepx = 0
-        self.stepy = 0
-        self.posx = 0
-        self.posy = 0
         self.rot = 0
         self.is_moving = False
 
@@ -505,16 +534,14 @@ class Dash_Mob(pg.sprite.Sprite):
         now = pg.time.get_ticks()
         if now - self.last_dash > self.dash_delay:
             self.last_dash = now
-            self.posx = self.game.player.rect.centerx
-            self.posy = self.game.player.rect.centery
             self.dx = self.game.player.rect.centerx - self.rect.centerx
             self.dy = self.game.player.rect.centery - self.rect.centery
             self.rot = math.atan2(self.dy, self.dx)
             self.is_moving = True
 
         if self.is_moving:
-            self.rect.centerx += 7*(SPEED*math.cos(self.rot))
-            self.rect.centery += 7*(SPEED*math.sin(self.rot))
+            self.rect.centerx += 6*(SPEED*math.cos(self.rot))
+            self.rect.centery += 6*(SPEED*math.sin(self.rot))
 
         if self.rect.right >= WIDTH-10:
             self.rect.right = WIDTH - 10
@@ -528,3 +555,13 @@ class Dash_Mob(pg.sprite.Sprite):
         if self.rect.left <= 10:
             self.rect.left = 10
             self.is_moving = False
+        
+class Entry(pg.sprite.Sprite):
+    def __init__(self, game):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.image = self.game.door_img
+        self.image = pg.transform.scale2x(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.centery = random.randrange(200, WIDTH-200)
+        self.rect.centery = random.randrange(200, HEIGHT-200)

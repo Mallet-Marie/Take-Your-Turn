@@ -5,6 +5,7 @@ from settings import *
 from sprites import *
 
 img_dir = path.join(path.dirname(__file__), 'img')
+aud_dir = path.join(path.dirname(__file__), 'aud')
 
 class Game:
     def __init__(self):
@@ -21,7 +22,6 @@ class Game:
 
     def new(self):
         #start new game
-        self.load()
         self.check_area()
         self.all_sprites = pg.sprite.Group()
         self.player = Player(self)
@@ -33,6 +33,8 @@ class Game:
             self.spawn()
         for i in range(2):
             self.spawn_ranged()
+        self.entry = Entry(self)
+        self.all_sprites.add(self.entry)
         self.d_mob = Dash_Mob(self)
         self.enemies.append(self.d_mob)
         self.mobs.add(self.d_mob)
@@ -111,10 +113,7 @@ class Game:
     def draw(self):
         #Game loop draw
         self.screen.fill(BLACK)
-        self.rel_x = self.x % self.background_rect.width
         self.screen.blit(self.background, self.background_rect)
-        if self.rel_x < WIDTH:
-            self.screen.blit(self.background, (self.rel_x, 0))
         self.all_sprites.draw(self.screen)
         self.draw_health(self.screen, 5, 5, self.player.health)
         self.draw_mana(self.screen, 5, 30, self.player.mana)
@@ -142,6 +141,10 @@ class Game:
     def kill_all(self):
         for sprite in self.mobs:
             sprite.kill()
+        for projectile in self.projectiles:
+            projectile.kill()
+        for pickup in self.pickups:
+            pickup.kill()
 
     def check_area(self):
         if self.area == 1:
@@ -157,6 +160,11 @@ class Game:
         self.background_rect = self.background.get_rect()
 
     def load(self):
+        self.door_img = pg.image.load(path.join(img_dir, 'tile6.png')).convert()
+        self.mana_img = pg.image.load(path.join(img_dir, 'mana.png')).convert()
+        self.mana_img.set_colorkey(BLACK)
+        self.door_img.set_colorkey(BLACK)
+        self.door_img = pg.transform.scale2x(self.door_img)
         self.tile_imgs = []
         for i in range(1, 6):
             filename = 'tile{}.png'.format(i)
@@ -179,14 +187,54 @@ class Game:
             img.set_colorkey(BLACK)
             img = pg.transform.scale2x(img)
             self.mummy_imgs.append(img)
-        self.player_imgs = []
-        self.player_imgs_list = ['player2.png', 'player3.png', 'player4.png', 'player5.png']
-        for img in self.player_imgs_list:
-            img = pg.image.load(path.join(img_dir, img)).convert()
-            img = pg.transform.scale(img,(64,64))
+
+        self.u_move_anim = []
+        self.d_move_anim = []
+        self.r_move_anim = []
+        self.l_move_anim = []
+
+        for i in range(4):
+            filename = 'r_move{}.png'.format(i)
+            img = pg.image.load(path.join(img_dir, filename)).convert()
             img.set_colorkey(BLACK)
-            self.player_imgs.append(img)
-        self.x = 0
+            img = pg.transform.scale2x(img)
+            self.r_move_anim.append(img)
+
+            filename2 = 'l_move{}.png'.format(i)
+            img2 = pg.image.load(path.join(img_dir, filename2)).convert()
+            img2.set_colorkey(BLACK)
+            img2 = pg.transform.scale2x(img2)
+            self.l_move_anim.append(img2)
+
+            filename3 = 'u_move{}.png'.format(i)
+            img3 = pg.image.load(path.join(img_dir, filename3)).convert()
+            img3.set_colorkey(BLACK)
+            img3 = pg.transform.scale2x(img3)
+            self.u_move_anim.append(img3)
+
+            filename4 = 'd_move{}.png'.format(i)
+            img4 = pg.image.load(path.join(img_dir, filename4)).convert()
+            img4.set_colorkey(BLACK)
+            img4 = pg.transform.scale2x(img4)
+            self.d_move_anim.append(img4)
+            
+        self.u_attack_img = pg.image.load(path.join(img_dir, 'u_attack.png')).convert()
+        self.d_attack_img = pg.image.load(path.join(img_dir, 'd_attack.png')).convert()
+        self.r_attack_img = pg.image.load(path.join(img_dir, 'r_attack.png')).convert()
+        self.l_attack_img = pg.image.load(path.join(img_dir, 'l_attack.png')).convert()
+
+        self.u_attack_img = pg.transform.scale2x(self.u_attack_img)
+        self.d_attack_img = pg.transform.scale2x(self.d_attack_img)
+        self.r_attack_img = pg.transform.scale2x(self.r_attack_img)
+        self.l_attack_img = pg.transform.scale2x(self.l_attack_img)
+
+        self.u_attack_img.set_colorkey(BLACK)
+        self.d_attack_img.set_colorkey(BLACK)
+        self.r_attack_img.set_colorkey(BLACK)
+        self.l_attack_img.set_colorkey(BLACK)
+
+        self.spell_image = pg.image.load(path.join(img_dir, 'spell.png')).convert()
+        self.spell_image = pg.transform.scale2x(self.spell_image)
         self.area = 1
     
     def draw_health(self, surf, x, y, health):
@@ -209,7 +257,11 @@ class Game:
 
     def intro_screen(self):
         intro = True
-
+        self.load()
+        pg.mixer.music.load(path.join(aud_dir, 'THE_DESERT_-_MUSIC_OF_DESERT_Download_Royalty_Free_Vlog_Music_Free_Copyright-safe_Music.ogg'))
+        pg.mixer.music.set_volume(0.2)
+        pg.mixer.music.play(loops=-1)
+        
         title = self.font.render('Temple Raiders', True, BLACK)
         title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
         play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 100,
