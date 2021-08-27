@@ -30,21 +30,21 @@ class Game:
         self.projectiles = pg.sprite.Group()
         for i in range(2):
             self.spawn()
-        for i in range(1):
-            self.spawn_ranged()
+        self.spawn_ranged()
         self.temples = pg.sprite.Group()
         self.temple = Temple(self)
         self.temples.add(self.temple)
         self.entry = Door(self)
         self.doors = pg.sprite.Group()
         self.doors.add(self.entry)
-        self.d_mob = Dash_Mob(self)
-        self.mobs.add(self.d_mob)
-        self.all_sprites.add(self.d_mob)
         self.pickups = pg.sprite.Group()
         self.attack = pg.sprite.Group()
         self.kills = 0
+        self.arena_kills = 0
         self.entry_is_open = False
+        self.level = 0
+        self.or_level = 0
+        self.win = False
         self.run()
 
     def run(self):
@@ -85,7 +85,9 @@ class Game:
         for hit in attack_hit:
             hit.kill()
             self.kills+=1
-            if random.random() >= 0:
+            if self.area == 5:
+                self.arena_kills += 1
+            if random.random() >= 0.7:
                 if hit.type != 'ranged':
                     self.pickup = Pickup(self, hit.rect.center)
                     self.all_sprites.add(self.pickup)
@@ -104,9 +106,24 @@ class Game:
         door = pg.sprite.spritecollide(self.player, self.doors, False)
         if self.entry_is_open:
             for door in door:
+                self.level = 1
                 self.area = 5
                 self.entry_is_open = False
                 self.check_area()
+
+        if self.area == 5:
+            if len(self.mobs.sprites()) == 0:
+                if self.arena_kills >= 15:
+                    self.win = True
+                else:
+                    self.level += 1
+
+        if self.level != self.or_level:
+            for i in range(self.level):
+                self.spawn()
+            for i in range(self.level-1):
+                self.spawn_ranged() 
+            self.or_level = self.level
 
     def event(self):
         #Game loop events
@@ -137,12 +154,6 @@ class Game:
         # Update the display
         pg.display.update()
 
-    def show_start_screen(self):
-        pass
-
-    def show_go_screen(self):
-        pass
-    
     def spawn(self):
         self.mob = Mob(self)
         self.mobs.add(self.mob)
@@ -152,6 +163,9 @@ class Game:
         self.r_mob = Ranged_Mob(self)
         self.mobs.add(self.r_mob)
         self.all_sprites.add(self.r_mob)
+        self.d_mob = Dash_Mob(self)
+        self.mobs.add(self.d_mob)
+        self.all_sprites.add(self.d_mob)
     
     def kill_all(self):
         for sprite in self.mobs:
@@ -171,10 +185,10 @@ class Game:
         elif self.area == 4:
             self.background = self.tile_imgs[3]
         elif self.area == 5:
-            self.player.max_mana = 200
-            self.player.max_health = 10
+            self.player.max_mana = 150
+            self.player.max_health = 7
             self.player.health = 5
-            self.player.mana = 100
+            self.player.mana = 125
             self.background = self.tile_imgs[1]
         self.background_rect = self.background.get_rect()
 
@@ -288,9 +302,9 @@ class Game:
             fill = (pct/self.player.max_mana) * BAR_LENGTH
             outline_rect = pg.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
             fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
-        elif self.player.max_mana == 200:
-            fill = (pct/self.player.max_mana) * 2*BAR_LENGTH
-            outline_rect = pg.Rect(x, y, BAR_LENGTH*2, BAR_HEIGHT)
+        elif self.player.max_mana == 150:
+            fill = (pct/self.player.max_mana) * 1.5*BAR_LENGTH
+            outline_rect = pg.Rect(x, y, BAR_LENGTH*1.5, BAR_HEIGHT)
             fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
         pg.draw.rect(surf, BLUE, fill_rect)
         pg.draw.rect(surf, WHITE, outline_rect, 2)        
