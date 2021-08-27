@@ -3,7 +3,7 @@
 WIDTH = 1280
 HEIGHT = 920
 FPS = 60
-TITLE = "rpg test"
+TITLE = "Temple Raiders"
 
 # define colors
 WHITE = (255, 255, 255)

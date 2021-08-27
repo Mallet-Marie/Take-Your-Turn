@@ -29,6 +29,8 @@ class Player(pg.sprite.Sprite):
         self.frame = 0
         self.last_update = pg.time.get_ticks()
         self.framerate = 120
+        self.max_health = 5
+        self.max_mana = 100
         print("arrow keys-move, space-sword, c-spell")
 
     def attack(self):
@@ -37,11 +39,11 @@ class Player(pg.sprite.Sprite):
             center = self.rect.center
             if self.rot == 0:
                 self.image = self.game.u_attack_img
-            if self.rot == 90:
+            if self.rot == 90 or self.rot == 135 or self.rot == 45:
                 self.image = self.game.l_attack_img
             if self.rot == 180:
                 self.image = self.game.d_attack_img
-            if self.rot == 270:
+            if self.rot == 270 or self.rot == 315 or self.rot == 225:
                 self.image = self.game.r_attack_img
             self.rect = self.image.get_rect()
             self.rect.center = center
@@ -76,16 +78,16 @@ class Player(pg.sprite.Sprite):
                 else:
                     self.vx = SPEED
                     self.rot = 270
-                    now = pg.time.get_ticks()
-                    if now - self.last_update > self.framerate:
-                        self.last_update = now
-                        self.frame += 1
-                        if self.frame >= 4:
-                            self.frame = 0
-                        center = self.rect.center
-                        self.image = self.game.r_move_anim[self.frame]
-                        self.rect = self.image.get_rect()
-                        self.rect.center = center
+                now = pg.time.get_ticks()
+                if now - self.last_update > self.framerate:
+                    self.last_update = now
+                    self.frame += 1
+                    if self.frame >= 4:
+                        self.frame = 0
+                    center = self.rect.center
+                    self.image = self.game.r_move_anim[self.frame]
+                    self.rect = self.image.get_rect()
+                    self.rect.center = center
                     #self.rotate()
             if keys[pg.K_LEFT]:
                 if keys[pg.K_UP]:
@@ -100,17 +102,16 @@ class Player(pg.sprite.Sprite):
                     self.vx = -SPEED
                     self.rot = 90
                     #self.image = self.game.player_imgs[2]
-                    now = pg.time.get_ticks()
-                    if now - self.last_update > self.framerate:
-                        self.last_update = now
-                        self.frame += 1
-                        if self.frame >= 4:
-                            self.frame = 0
-                        center = self.rect.center
-                        self.image = self.game.l_move_anim[self.frame]
-                        self.rect = self.image.get_rect()
-                        self.rect.center = center
-
+                now = pg.time.get_ticks()
+                if now - self.last_update > self.framerate:
+                    self.last_update = now
+                    self.frame += 1
+                    if self.frame >= 4:
+                        self.frame = 0
+                    center = self.rect.center
+                    self.image = self.game.l_move_anim[self.frame]
+                    self.rect = self.image.get_rect()
+                    self.rect.center = center
                     #self.rotate()
             if keys[pg.K_UP] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
                 self.vy = -SPEED
@@ -257,6 +258,18 @@ class Player(pg.sprite.Sprite):
                 self.rect.left = 10
             if self.rect.top <= 10:
                 self.rect.top = 10
+        if self.game.entry_is_open or self.game.area == 5:
+            if self.rect.left <= 10:
+                self.rect.left = 10
+            if self.rect.top <= 10:
+                self.rect.top = 10
+            if self.rect.right >= WIDTH-10:
+                self.rect.right = WIDTH - 10
+            if self.rect.bottom >= HEIGHT-10:
+                self.rect.bottom = HEIGHT-10
+            if self.game.area != 5:
+                if self.rect.centery <= self.game.entry.rect.bottom:
+                    self.rect.centery = self.game.entry.rect.bottom
 
     def hit(self):
         self.immortal = True
@@ -265,9 +278,8 @@ class Player(pg.sprite.Sprite):
 class Sword(pg.sprite.Sprite):
     def __init__(self, game, angle, player):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.Surface((10, 60))
-        self.image.set_alpha(128)
-        self.image.fill(WHITE)
+        self.game = game
+        self.image = self.game.sword_img
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.image = pg.transform.rotate(self.image, angle)
@@ -277,29 +289,29 @@ class Sword(pg.sprite.Sprite):
         self.player = player
         print(angle)
         if angle == 0:
-            self.rect.centerx = self.player.rect.centerx
-            self.rect.bottom = self.player.rect.centery
+            self.rect.centerx = self.player.rect.centerx-4
+            self.rect.bottom = self.player.rect.centery-15
         elif angle == 270:
-            self.rect.centerx = self.player.rect.right
-            self.rect.bottom = self.player.rect.centery
+            self.rect.centerx = self.player.rect.right+25
+            self.rect.bottom = self.player.rect.centery+20
         elif angle == 180:
-            self.rect.centerx = self.player.rect.centerx
-            self.rect.top = self.player.rect.centery
+            self.rect.centerx = self.player.rect.centerx+5
+            self.rect.top = self.player.rect.centery+16
         elif angle == 90:
-            self.rect.centerx = self.player.rect.left
-            self.rect.bottom = self.player.rect.centery       
+            self.rect.centerx = self.player.rect.left-25
+            self.rect.bottom = self.player.rect.centery+20       
         elif angle == 45:
-            self.rect.centerx = self.player.rect.left
-            self.rect.bottom = self.player.rect.centery
+            self.rect.centerx = self.player.rect.left-10
+            self.rect.bottom = self.player.rect.centery+20
         elif angle == 135:
-            self.rect.centerx = self.player.rect.left
-            self.rect.top = self.player.rect.centery
+            self.rect.centerx = self.player.rect.left-10
+            self.rect.top = self.player.rect.centery+5
         elif angle == 225:
-            self.rect.centerx = self.player.rect.right
-            self.rect.top = self.player.rect.centery
+            self.rect.centerx = self.player.rect.right+10
+            self.rect.top = self.player.rect.centery+4
         elif angle == 315:
-            self.rect.centerx = self.player.rect.right
-            self.rect.bottom = self.player.rect.centery     
+            self.rect.centerx = self.player.rect.right+10
+            self.rect.bottom = self.player.rect.centery+20     
         self.last_update = pg.time.get_ticks()
         
     def update(self):
@@ -514,8 +526,8 @@ class Dash_Mob(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.image = pg.Surface((50, 50))
-        self.image.fill(BLACK)
+        self.image = self.game.dash_mob_image
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.pointx = random.randrange(50, WIDTH-50)
         self.pointy = random.randrange(50, HEIGHT-50)
@@ -540,8 +552,8 @@ class Dash_Mob(pg.sprite.Sprite):
             self.is_moving = True
 
         if self.is_moving:
-            self.rect.centerx += 6*(SPEED*math.cos(self.rot))
-            self.rect.centery += 6*(SPEED*math.sin(self.rot))
+            self.rect.centerx += 4*(SPEED*math.cos(self.rot))
+            self.rect.centery += 4*(SPEED*math.sin(self.rot))
 
         if self.rect.right >= WIDTH-10:
             self.rect.right = WIDTH - 10
@@ -556,12 +568,25 @@ class Dash_Mob(pg.sprite.Sprite):
             self.rect.left = 10
             self.is_moving = False
         
-class Entry(pg.sprite.Sprite):
+class Temple(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self.image = self.game.door_img
         self.image = pg.transform.scale2x(self.image)
         self.rect = self.image.get_rect()
-        self.rect.centery = random.randrange(200, WIDTH-200)
-        self.rect.centery = random.randrange(200, HEIGHT-200)
+        self.rect.center = [WIDTH/2, HEIGHT-750]
+        print(self.rect.bottom)
+        print(self.rect.right)
+        print(self.rect.left)
+
+class Door(pg.sprite.Sprite):
+    def __init__(self, game):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.image = pg.Surface((64, 64))
+        self.image.set_alpha(0)
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.bottom = self.game.temple.rect.bottom-15
+        self.rect.centerx = self.game.temple.rect.centerx

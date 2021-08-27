@@ -28,19 +28,23 @@ class Game:
         self.all_sprites.add(self.player)
         self.mobs = pg.sprite.Group()
         self.projectiles = pg.sprite.Group()
-        self.enemies = []
         for i in range(2):
             self.spawn()
-        for i in range(2):
+        for i in range(1):
             self.spawn_ranged()
-        self.entry = Entry(self)
-        self.all_sprites.add(self.entry)
+        self.temples = pg.sprite.Group()
+        self.temple = Temple(self)
+        self.temples.add(self.temple)
+        self.entry = Door(self)
+        self.doors = pg.sprite.Group()
+        self.doors.add(self.entry)
         self.d_mob = Dash_Mob(self)
-        self.enemies.append(self.d_mob)
         self.mobs.add(self.d_mob)
         self.all_sprites.add(self.d_mob)
         self.pickups = pg.sprite.Group()
         self.attack = pg.sprite.Group()
+        self.kills = 0
+        self.entry_is_open = False
         self.run()
 
     def run(self):
@@ -80,6 +84,7 @@ class Game:
         attack_hit = pg.sprite.groupcollide(self.mobs, self.attack, True, False)
         for hit in attack_hit:
             hit.kill()
+            self.kills+=1
             if random.random() >= 0:
                 if hit.type != 'ranged':
                     self.pickup = Pickup(self, hit.rect.center)
@@ -89,12 +94,19 @@ class Game:
         pickups = pg.sprite.spritecollide(self.player, self.pickups, True)
         for pickup in pickups:
             if pickup.type == 'health':
-                if self.player.health < 5:
+                if self.player.health < self.player.max_health:
                     self.player.health += 1
             if pickup.type == 'mana':
                 self.player.mana += 10
-                if self.player.mana >= 100:
-                    self.player.mana = 100
+                if self.player.mana >= self.player.max_mana:
+                    self.player.mana = self.player.max_mana
+        
+        door = pg.sprite.spritecollide(self.player, self.doors, False)
+        if self.entry_is_open:
+            for door in door:
+                self.area = 5
+                self.entry_is_open = False
+                self.check_area()
 
     def event(self):
         #Game loop events
@@ -114,6 +126,11 @@ class Game:
         #Game loop draw
         self.screen.fill(BLACK)
         self.screen.blit(self.background, self.background_rect)
+        if len(self.mobs.sprites()) == 0 and self.kills >= 1 and self.area != 5:
+            self.entry_is_open = True
+        if self.entry_is_open:
+            self.temples.draw(self.screen)
+            self.doors.draw(self.screen)
         self.all_sprites.draw(self.screen)
         self.draw_health(self.screen, 5, 5, self.player.health)
         self.draw_mana(self.screen, 5, 30, self.player.mana)
@@ -128,13 +145,11 @@ class Game:
     
     def spawn(self):
         self.mob = Mob(self)
-        self.enemies.append(self.mob)
         self.mobs.add(self.mob)
         self.all_sprites.add(self.mob)
     
     def spawn_ranged(self):
         self.r_mob = Ranged_Mob(self)
-        self.enemies.append(self.r_mob)
         self.mobs.add(self.r_mob)
         self.all_sprites.add(self.r_mob)
     
@@ -156,6 +171,10 @@ class Game:
         elif self.area == 4:
             self.background = self.tile_imgs[3]
         elif self.area == 5:
+            self.player.max_mana = 200
+            self.player.max_health = 10
+            self.player.health = 5
+            self.player.mana = 100
             self.background = self.tile_imgs[1]
         self.background_rect = self.background.get_rect()
 
@@ -173,6 +192,7 @@ class Game:
             img = pg.transform.scale(img, (WIDTH, HEIGHT))
             self.tile_imgs.append(img)
         self.heart_img = pg.image.load(path.join(img_dir, 'heart.png')).convert()
+        self.empty_heart_img = pg.image.load(path.join(img_dir, 'empty_heart.png')).convert()
         self.poison_img = pg.image.load(path.join(img_dir, 'poison.png')).convert()
         self.snake_imgs = []
         self.snake_imgs_list = ['snake.png', 'snake1.png', 'snake2.png', 'snake3.png']
@@ -233,9 +253,16 @@ class Game:
         self.r_attack_img.set_colorkey(BLACK)
         self.l_attack_img.set_colorkey(BLACK)
 
+        self.sword_img = pg.image.load(path.join(img_dir, 'u_sword.png')).convert()
+
         self.spell_image = pg.image.load(path.join(img_dir, 'spell.png')).convert()
         self.spell_image = pg.transform.scale2x(self.spell_image)
+
+        self.dash_mob_image = pg.image.load(path.join(img_dir, 'dash_mob.png')).convert()
+        self.dash_mob_image = pg.transform.scale(self.dash_mob_image, (100, 70))
+        
         self.area = 1
+        pg.display.set_icon(self.d_move_anim[0])
     
     def draw_health(self, surf, x, y, health):
         for i in range(health):
@@ -245,13 +272,26 @@ class Game:
             heart_rect.x = x+25*i
             heart_rect.y = y
             surf.blit(heart_img, heart_rect)
+
+        for i in range(self.player.max_health):
+            heart_img = self.empty_heart_img
+            heart_img.set_colorkey(BLACK)
+            heart_rect = heart_img.get_rect()
+            heart_rect.x = x+25*i
+            heart_rect.y = y
+            surf.blit(heart_img, heart_rect)
         
     def draw_mana(self, surf, x, y, pct):
         if pct < 0:
             pct = 0
-        fill = (pct/100) * BAR_LENGTH
-        outline_rect = pg.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
-        fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
+        if self.player.max_mana == 100:
+            fill = (pct/self.player.max_mana) * BAR_LENGTH
+            outline_rect = pg.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+            fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
+        elif self.player.max_mana == 200:
+            fill = (pct/self.player.max_mana) * 2*BAR_LENGTH
+            outline_rect = pg.Rect(x, y, BAR_LENGTH*2, BAR_HEIGHT)
+            fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
         pg.draw.rect(surf, BLUE, fill_rect)
         pg.draw.rect(surf, WHITE, outline_rect, 2)        
 
