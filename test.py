@@ -17,6 +17,7 @@ class Game:
         self.clock = pg.time.Clock()
         self.running = True
         self.font = pg.font.Font('Pro EB.otf', 48)
+        self.font2 = pg.font.Font('Pro EB.otf', 24)
         self.intro_background = pg.image.load(path.join(img_dir, 'back.png')).convert()
         self.intro_background = pg.transform.scale(self.intro_background, (WIDTH, HEIGHT))
         self.game_over = False
@@ -330,6 +331,16 @@ class Game:
             title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
             play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 100,
                                     WHITE, BLACK, 'Play', 32)
+            instructions = self.font2.render('Arrow keys or WASD to Move', True, BLACK)
+            instructions2 = self.font2.render('C to use Spell, Spacebar to use Sword', True, BLACK)
+            instructions_rect = instructions.get_rect()
+            instructions2_rect = instructions2.get_rect()
+            instructions_rect.centerx = WIDTH/2
+            instructions_rect.centery = HEIGHT/2 - 200
+            instructions2_rect.centerx = WIDTH/2
+            instructions2_rect.centery = HEIGHT/2 - 250
+            title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
+
 
         elif self.game_over: 
             title = self.font.render('Game Over', True, BLACK)
@@ -352,6 +363,7 @@ class Game:
                 if event.type == pg.QUIT:
                     intro = False
                     self.running = False
+                    self.playing == False
 
             mouse_pos = pg.mouse.get_pos()
             mouse_pressed = pg.mouse.get_pressed()
@@ -362,6 +374,9 @@ class Game:
             self.screen.blit(self.intro_background, (0, 0))
             self.screen.blit(title, title_rect)
             self.screen.blit(play_button.image, play_button.rect)
+            if not self.game_over and not self.win:
+                self.screen.blit(instructions, instructions_rect)
+                self.screen.blit(instructions2, instructions2_rect)
             self.clock.tick(FPS)
             pg.display.update()
 
