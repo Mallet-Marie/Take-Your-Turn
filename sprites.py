@@ -65,13 +65,13 @@ class Player(pg.sprite.Sprite):
     def move(self):
         keys = pg.key.get_pressed()
         if self.allow_move:
-            if keys[pg.K_RIGHT]:
-                if keys[pg.K_UP]:
+            if keys[pg.K_RIGHT] or keys[pg.K_d]:
+                if keys[pg.K_UP] or keys[pg.K_w]:
                     self.rot = 315
                     #calculates speed based on components so diagonal speed is same as vertical and horizontal
                     self.vx = SPEED * math.cos(math.radians(self.rot))
                     self.vy = SPEED * math.sin(math.radians(self.rot))
-                elif keys[pg.K_DOWN]:
+                if keys[pg.K_DOWN] or keys[pg.K_s]:
                     self.rot = 225
                     self.vx = -SPEED * math.cos(math.radians(self.rot))
                     self.vy = -SPEED * math.sin(math.radians(self.rot))
@@ -89,12 +89,12 @@ class Player(pg.sprite.Sprite):
                     self.rect = self.image.get_rect()
                     self.rect.center = center
                     #self.rotate()
-            if keys[pg.K_LEFT]:
-                if keys[pg.K_UP]:
+            if keys[pg.K_LEFT] or keys[pg.K_a]:
+                if keys[pg.K_UP] or keys[pg.K_w]:
                     self.rot = 45
                     self.vx = -SPEED * math.cos(math.radians(self.rot))
                     self.vy = -SPEED * math.sin(math.radians(self.rot))
-                elif keys[pg.K_DOWN]:
+                if keys[pg.K_DOWN] or keys[pg.K_s]:
                     self.rot = 135
                     self.vx = SPEED * math.cos(math.radians(self.rot))
                     self.vy = SPEED * math.sin(math.radians(self.rot))
@@ -113,7 +113,7 @@ class Player(pg.sprite.Sprite):
                     self.rect = self.image.get_rect()
                     self.rect.center = center
                     #self.rotate()
-            if keys[pg.K_UP] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
+            if (keys[pg.K_UP] or keys[pg.K_w]) and not (keys[pg.K_LEFT] or keys[pg.K_a]) and not (keys[pg.K_RIGHT] or keys[pg.K_d]):
                 self.vy = -SPEED
                 self.rot = 0
                 now = pg.time.get_ticks()
@@ -127,7 +127,7 @@ class Player(pg.sprite.Sprite):
                     self.rect = self.image.get_rect()
                     self.rect.center = center
                 #self.rotate()
-            if keys[pg.K_DOWN] and not keys[pg.K_LEFT] and not keys[pg.K_RIGHT]:
+            if (keys[pg.K_DOWN] or keys[pg.K_s]) and not (keys[pg.K_LEFT] or keys[pg.K_a]) and not (keys[pg.K_RIGHT] or keys[pg.K_d]):
                 self.vy = SPEED
                 self.rot = 180
                 now = pg.time.get_ticks()
@@ -544,18 +544,19 @@ class Dash_Mob(pg.sprite.Sprite):
             self.dy = self.game.player.rect.centery - self.rect.centery
             self.rot = math.atan2(self.dy, self.dx)
             self.is_moving = True
+        
+        if not self.is_moving:
+            for i, m in enumerate(self.game.mobs):
+                if m == self:
+                    continue
+                if m.rect.colliderect(self.rect):
+                    if self.rect.y < m.rect.y:
+                        self.rect.y -= self.speed
+                    if self.rect.y > m.rect.y:
+                        self.rect.y += self.speed
+                    if self.rect.y == m.rect.y:
+                        self.rect.y += random.randint(-1, 1)
 
-        for i, m in enumerate(self.game.mobs):
-            if m == self:
-                continue
-            if m.rect.colliderect(self.rect):
-                if self.rect.y < m.rect.y:
-                    self.rect.y -= self.speed
-                if self.rect.y > m.rect.y:
-                    self.rect.y += self.speed
-                if self.rect.y == m.rect.y:
-                    self.rect.y += random.randint(-1, 1)
-                    
         if self.is_moving:
             self.rect.centerx += 4*(SPEED*math.cos(self.rot))
             self.rect.centery += 4*(SPEED*math.sin(self.rot))

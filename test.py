@@ -16,13 +16,14 @@ class Game:
         pg.display.set_caption(TITLE)
         self.clock = pg.time.Clock()
         self.running = True
-        self.font = pg.font.Font('Pro EB.otf', 32)
+        self.font = pg.font.Font('Pro EB.otf', 48)
         self.intro_background = pg.image.load(path.join(img_dir, 'back.png')).convert()
         self.intro_background = pg.transform.scale(self.intro_background, (WIDTH, HEIGHT))
+        self.game_over = False
+        self.win = False
 
     def new(self):
         #start new game
-        self.check_area()
         self.all_sprites = pg.sprite.Group()
         self.player = Player(self)
         self.all_sprites.add(self.player)
@@ -45,6 +46,9 @@ class Game:
         self.level = 0
         self.or_level = 0
         self.win = False
+        self.area = 1
+        self.check_area()
+
         self.run()
 
     def run(self):
@@ -67,8 +71,8 @@ class Game:
             self.player.rect.y += 20
             if self.player.health <= 0:
                 self.player.kill()
-                self.running = False
                 self.playing = False
+                self.game_over = True
         
         hit = pg.sprite.spritecollide(self.player, self.projectiles, False)
         if hit and not self.player.immortal:
@@ -78,8 +82,8 @@ class Game:
             self.player.rect.y += 20
             if self.player.health <= 0:
                 self.player.kill()
-                self.running = False
                 self.playing = False
+                self.game_over = True
 
         attack_hit = pg.sprite.groupcollide(self.mobs, self.attack, True, False)
         for hit in attack_hit:
@@ -108,6 +112,10 @@ class Game:
             for door in door:
                 self.level = 1
                 self.area = 5
+                for sprite in self.pickups:
+                    sprite.kill()
+                for sprite in self.projectiles:
+                    sprite.kill()
                 self.entry_is_open = False
                 self.check_area()
 
@@ -115,6 +123,8 @@ class Game:
             if len(self.mobs.sprites()) == 0:
                 if self.arena_kills >= 15:
                     self.win = True
+                    self.game_over = False
+                    self.playing = False
                 else:
                     self.level += 1
 
@@ -275,7 +285,6 @@ class Game:
         self.dash_mob_image = pg.image.load(path.join(img_dir, 'dash_mob.png')).convert()
         self.dash_mob_image = pg.transform.scale(self.dash_mob_image, (100, 70))
         
-        self.area = 1
         pg.display.set_icon(self.d_move_anim[0])
     
     def draw_health(self, surf, x, y, health):
@@ -311,15 +320,33 @@ class Game:
 
     def intro_screen(self):
         intro = True
-        self.load()
-        pg.mixer.music.load(path.join(aud_dir, 'THE_DESERT_-_MUSIC_OF_DESERT_Download_Royalty_Free_Vlog_Music_Free_Copyright-safe_Music.ogg'))
-        pg.mixer.music.set_volume(0.2)
-        pg.mixer.music.play(loops=-1)
         
-        title = self.font.render('Temple Raiders', True, BLACK)
-        title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
-        play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 100,
-                             WHITE, BLACK, 'Play', 32)
+        if not self.game_over and not self.win:
+            self.load()
+            pg.mixer.music.load(path.join(aud_dir, 'THE_DESERT_-_MUSIC_OF_DESERT_Download_Royalty_Free_Vlog_Music_Free_Copyright-safe_Music.ogg'))
+            pg.mixer.music.set_volume(0.2)
+            pg.mixer.music.play(loops=-1)
+            title = self.font.render('Temple Raiders', True, BLACK)
+            title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
+            play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 100,
+                                    WHITE, BLACK, 'Play', 32)
+
+        elif self.game_over: 
+            title = self.font.render('Game Over', True, BLACK)
+            title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
+            play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 200,
+                                    WHITE, BLACK, 'Try Again', 32)
+            print(self.area)
+
+        elif self.win:
+            title = self.font.render('You Win', True, BLACK)
+            title_rect = title.get_rect(x=(WIDTH/2) - 125, y=(HEIGHT/2) - 125)
+            play_button = Button((WIDTH/2) - 50, (HEIGHT/2) - 75, 50, 200,
+                                    WHITE, BLACK, 'Play Again', 32)
+
+        title_rect.centerx = WIDTH/2
+        play_button.rect.centerx = WIDTH/2
+        
         while intro:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -340,9 +367,8 @@ class Game:
 
 g = Game()
 g.intro_screen()
-#g.show_start_screen()
 while g.running:
     g.new()
-    #g.show_go_screen()
+    g.intro_screen()
 
 pg.quit()
